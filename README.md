@@ -142,19 +142,22 @@ Flow 10.0.0.1 -> 10.0.0.2 | Bandwidth: 114.96 Bytes/s
 
 ### 6. Controller Running
 
-![Controller Running](screenshots/6_controller_running.png)
+<img width="906" height="401" alt="Screenshot 2026-04-20 at 10 29 45 PM" src="https://github.com/user-attachments/assets/b7e5ce9b-5279-445b-af1a-48288e601f80" />
 
 ### 7. Mininet Connected to Controller
 
-![Mininet Connected](screenshots/7_mininet_connected.png)
+<img width="761" height="345" alt="Screenshot 2026-04-20 at 10 30 57 PM" src="https://github.com/user-attachments/assets/1df727c4-f287-4508-bacf-b52046b571be" />
+
 
 ### 8. Traffic Generation
 
-![Traffic Generation](screenshots/8_traffic_generation.png)
+<img width="548" height="110" alt="Screenshot 2026-04-20 at 10 31 40 PM" src="https://github.com/user-attachments/assets/c6dfcc8a-c6b2-4cc4-811a-7d6bfea4b062" />
+
 
 ### 9. Bandwidth Output (Main Result)
 
-![Bandwidth Output](screenshots/9_bandwidth_output.png)
+<img width="1038" height="298" alt="Screenshot 2026-04-20 at 10 32 24 PM" src="https://github.com/user-attachments/assets/217d7108-93ed-48de-895b-ec9bcb2f85bf" />
+
 
 ### 10. Reduced Traffic Scenario
 
