@@ -1,53 +1,45 @@
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
-from pox.lib.util import dpidToStr
+from pox.lib.recoco import Timer
 import time
 
 log = core.getLogger()
+prev = {}
 
-class NetworkMonitor(object):
-    def __init__(self, connection):
-        self.connection = connection
-        self.connection.addListeners(self)
-        self.last_stats = {}
-        self.last_time = time.time()
+def handle_flowstats(event):
+    global prev
+    now = time.time()
 
-        # Request stats every 2 seconds
-        core.callDelayed(2, self._request_stats)
+    for stat in event.stats:
+        try:
+            src = stat.match.nw_src
+            dst = stat.match.nw_dst
 
-    def _request_stats(self):
-        self.connection.send(of.ofp_stats_request(body=of.ofp_flow_stats_request()))
-        core.callDelayed(2, self._request_stats)
-
-    def _handle_FlowStatsReceived(self, event):
-        current_time = time.time()
-        time_diff = current_time - self.last_time
-
-        for stat in event.stats:
-            if stat.byte_count == 0:
+            if not src or not dst:
                 continue
 
-            key = (stat.match.nw_src, stat.match.nw_dst)
+            key = str(src) + " -> " + str(dst)
+            current = stat.byte_count
 
-            if key in self.last_stats:
-                prev_bytes = self.last_stats[key]
-                byte_diff = stat.byte_count - prev_bytes
+            if key in prev:
+                old_bytes, old_time = prev[key]
+                diff = current - old_bytes
+                dt = now - old_time
 
-                bandwidth = byte_diff / time_diff  # Bytes per second
+                if dt > 0:
+                    bw = diff / dt
+                    log.info("Flow %s | Bandwidth: %.2f Bytes/s", key, bw)
 
-                log.info("Flow %s -> %s | Bandwidth: %.2f Bytes/s",
-                         stat.match.nw_src,
-                         stat.match.nw_dst,
-                         bandwidth)
+            prev[key] = (current, now)
 
-            self.last_stats[key] = stat.byte_count
+        except:
+            pass
 
-        self.last_time = current_time
-
+def request_stats():
+    for c in core.openflow._connections.values():
+        c.send(of.ofp_stats_request(body=of.ofp_flow_stats_request()))
 
 def launch():
-    def start_switch(event):
-        log.info("Monitoring switch %s", dpidToStr(event.dpid))
-        NetworkMonitor(event.connection)
-
-    core.openflow.addListenerByName("ConnectionUp", start_switch)
+    core.openflow.addListenerByName("FlowStatsReceived", handle_flowstats)
+    Timer(2, request_stats, recurring=True)
+    log.info("Bandwidth Monitor Started")
