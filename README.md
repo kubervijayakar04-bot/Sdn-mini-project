@@ -1,132 +1,188 @@
-# File: monitor.py
-# Place this file inside: pox/pox/misc/monitor.py
+# Network Utilization Monitor using SDN (POX + Mininet)
 
-from pox.core import core
-import pox.openflow.libopenflow_01 as of
-from pox.lib.recoco import Timer
-import time
+---
 
-log = core.getLogger()
+## 📌 Problem Statement
 
-# Store previous flow stats
-previous_stats = {}
+To monitor network bandwidth utilization using Software Defined Networking (SDN) by collecting flow statistics from switches and calculating real-time bandwidth usage.
 
+---
 
-class NetworkMonitor(object):
-    def __init__(self, connection):
-        self.connection = connection
-        self.connection.addListeners(self)
+## ⚙️ Tools Used
 
-        # Request stats every 2 seconds
-        Timer(2, self.request_stats, recurring=True)
+* Mininet
+* POX Controller
+* OpenFlow Protocol
+* Ubuntu (Linux VM)
 
-    def request_stats(self):
-        self.connection.send(
-            of.ofp_stats_request(
-                body=of.ofp_flow_stats_request()
-            )
-        )
+---
 
-    def _handle_FlowStatsReceived(self, event):
-        global previous_stats
+## 🧠 Approach
 
-        current_time = time.time()
+* Created a virtual network topology using Mininet
+* Used POX controller to interact with OpenFlow switches
+* Collected flow statistics (byte counters) from switches
+* Calculated bandwidth using byte differences over time
+* Displayed real-time network utilization
 
-        for stat in event.stats:
-            try:
-                if stat.byte_count == 0:
-                    continue
+---
 
-                src = stat.match.nw_src
-                dst = stat.match.nw_dst
+## ⚙️ Controller Logic
 
-                if src is None or dst is None:
-                    continue
+The controller periodically requests flow statistics from the switch.
 
-                flow_key = str(src) + " -> " + str(dst)
+Bandwidth is calculated using:
 
-                if flow_key in previous_stats:
-                    old_bytes, old_time = previous_stats[flow_key]
+Bandwidth = (Current Byte Count − Previous Byte Count) / Time Interval
 
-                    byte_diff = stat.byte_count - old_bytes
-                    time_diff = current_time - old_time
+* Each flow is identified using source and destination IP
+* The controller computes bandwidth for each flow
+* Results are printed in real-time
 
-                    if time_diff > 0:
-                        bandwidth = byte_diff / time_diff
+---
 
-                        log.info(
-                            "Flow %s | Bandwidth: %.2f Bytes/s",
-                            flow_key,
-                            bandwidth
-                        )
+## ▶️ Steps to Run
 
-                previous_stats[flow_key] = (
-                    stat.byte_count,
-                    current_time
-                )
+### 1. Start POX Controller
 
-            except:
-                pass
+```
+cd ~/pox
+./pox.py forwarding.l2_learning misc.monitor
+```
 
+---
 
-def launch():
-    def start_switch(event):
-        log.info("Switch Connected - Monitoring Started")
-        NetworkMonitor(event.connection)
+### 2. Start Mininet
 
-    core.openflow.addListenerByName("ConnectionUp", start_switch)
+(Open a new terminal)
 
-    log.info("Bandwidth Monitor Started")        global previous_stats
+```
+sudo mn --controller=remote --topo single,3
+```
 
-        current_time = time.time()
+---
 
-        for stat in event.stats:
-            try:
-                # Ignore empty flows
-                if stat.byte_count == 0:
-                    continue
+### 3. Test Connectivity
 
-                src = stat.match.nw_src
-                dst = stat.match.nw_dst
+```
+pingall
+```
 
-                # Ignore flows without IP match
-                if src is None or dst is None:
-                    continue
+Expected:
 
-                flow_key = str(src) + " -> " + str(dst)
+* 0% packet loss
 
-                if flow_key in previous_stats:
-                    old_bytes, old_time = previous_stats[flow_key]
+---
 
-                    byte_diff = stat.byte_count - old_bytes
-                    time_diff = current_time - old_time
+### 4. Generate Traffic
 
-                    if time_diff > 0:
-                        bandwidth = byte_diff / time_diff
+```
+h1 ping h2
+```
 
-                        log.info(
-                            "Flow %s | Bandwidth: %.2f Bytes/s",
-                            flow_key,
-                            bandwidth
-                        )
+OR
 
-                previous_stats[flow_key] = (
-                    stat.byte_count,
-                    current_time
-                )
+```
+iperf
+```
 
-            except:
-                pass
+---
 
+## 📊 Output
 
-def launch():
-    def start_switch(event):
-        log.info("Monitoring Switch Connected")
-        NetworkMonitor(event.connection)
+* Displays bandwidth for each flow in Bytes/sec
+* Example output:
 
-    core.openflow.addListenerByName(
-        "ConnectionUp",
-        start_switch
-    )
+```
+Flow 10.0.0.1 -> 10.0.0.2 | Bandwidth: 114.96 Bytes/s
+```
 
-    log.info("Bandwidth Monitor Started")
+* Bandwidth updates periodically based on traffic
+
+---
+
+## 🔁 Test Scenarios
+
+### ✅ Scenario 1: Normal Traffic
+
+* Traffic is generated between hosts using ping/iperf
+* Controller displays continuous bandwidth usage
+
+---
+
+### ❌ Scenario 2: Reduced/No Traffic
+
+* When traffic is stopped, bandwidth values decrease
+* Demonstrates real-time monitoring capability
+
+---
+
+## 📸 Screenshots
+
+### 1. System Setup
+
+![Setup](screenshots/1_setup.png)
+
+### 2. Mininet Installation
+
+![Mininet Install](screenshots/2_mininet_install.png)
+
+### 3. Mininet Running
+
+![Mininet Start](screenshots/3_mininet_start.png)
+
+### 4. Connectivity Test (Pingall)
+
+![Pingall](screenshots/4_pingall_success.png)
+
+### 5. Controller Code
+
+![Controller Code](screenshots/5_controller_code.png)
+
+### 6. Controller Running
+
+![Controller Running](screenshots/6_controller_running.png)
+
+### 7. Mininet Connected to Controller
+
+![Mininet Connected](screenshots/7_mininet_connected.png)
+
+### 8. Traffic Generation
+
+![Traffic Generation](screenshots/8_traffic_generation.png)
+
+### 9. Bandwidth Output (Main Result)
+
+![Bandwidth Output](screenshots/9_bandwidth_output.png)
+
+### 10. Reduced Traffic Scenario
+
+![Reduced Traffic](screenshots/10_reduced_traffic.png)
+
+### 11. Cleanup
+
+![Cleanup](screenshots/11_cleanup.png)
+
+---
+
+## 📈 Future Scope
+
+* Visualize bandwidth using graphs
+* Implement traffic filtering or firewall rules
+* Extend to larger and complex network topologies
+* Integrate with real-time dashboards
+
+---
+
+## ✅ Conclusion
+
+This project demonstrates how SDN enables centralized control and monitoring of networks.
+The POX controller dynamically collects flow statistics and calculates bandwidth utilization in real-time, allowing efficient observation and analysis of network behavior.
+
+----
+
+## 📎 References
+
+* https://mininet.org/
+* https://github.com/noxrepo/pox
+* https://mininet.org/walkthrough/
