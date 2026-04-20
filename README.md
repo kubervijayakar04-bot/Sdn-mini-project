@@ -119,53 +119,36 @@ Flow 10.0.0.1 -> 10.0.0.2 | Bandwidth: 114.96 Bytes/s
 
 ## 📸 Screenshots
 
-### 1. System Setup
 
-![Setup](screenshots/1_setup.png)
-
-### 2. Mininet Installation
-
-![Mininet Install](screenshots/2_mininet_install.png)
-
-### 3. Mininet Running
-
-![Mininet Start](screenshots/3_mininet_start.png)
-
-### 4. Connectivity Test (Pingall)
-
-![Pingall](screenshots/4_pingall_success.png)
-
-### 5. Controller Code
+### 1. Controller Code
 
 <img width="1402" height="746" alt="Screenshot 2026-04-20 at 10 28 13 PM" src="https://github.com/user-attachments/assets/bf0c5801-999d-45a8-a9a7-550d522d92aa" />
 
 
-### 6. Controller Running
+### 2. Controller Running
 
 <img width="906" height="401" alt="Screenshot 2026-04-20 at 10 29 45 PM" src="https://github.com/user-attachments/assets/b7e5ce9b-5279-445b-af1a-48288e601f80" />
 
-### 7. Mininet Connected to Controller
+### 3. Mininet Connected to Controller
 
 <img width="761" height="345" alt="Screenshot 2026-04-20 at 10 30 57 PM" src="https://github.com/user-attachments/assets/1df727c4-f287-4508-bacf-b52046b571be" />
 
 
-### 8. Traffic Generation
+### 4. Traffic Generation
 
 <img width="548" height="110" alt="Screenshot 2026-04-20 at 10 31 40 PM" src="https://github.com/user-attachments/assets/c6dfcc8a-c6b2-4cc4-811a-7d6bfea4b062" />
 
 
-### 9. Bandwidth Output (Main Result)
+### 5. Bandwidth Output (Main Result)
 
-<img width="1038" height="298" alt="Screenshot 2026-04-20 at 10 32 24 PM" src="https://github.com/user-attachments/assets/217d7108-93ed-48de-895b-ec9bcb2f85bf" />
+<img width="756" height="397" alt="Screenshot 2026-04-20 at 10 34 28 PM" src="https://github.com/user-attachments/assets/59b6c3df-3f7c-42fb-910e-a3067d69108b" />
 
 
-### 10. Reduced Traffic Scenario
 
-![Reduced Traffic](screenshots/10_reduced_traffic.png)
+### 16. Reduced Traffic Scenario
 
-### 11. Cleanup
+<img width="746" height="159" alt="Screenshot 2026-04-20 at 10 36 37 PM" src="https://github.com/user-attachments/assets/efabd137-c185-43c4-b827-f2e03a98d617" />
 
-![Cleanup](screenshots/11_cleanup.png)
 
 ---
 
