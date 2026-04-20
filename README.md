@@ -49,4 +49,4 @@ Network-Utilization-Monitor/
 <img width="1092" height="591" alt="Screenshot 2026-04-20 at 12 08 49 AM" src="https://github.com/user-attachments/assets/8204c071-ecf2-43fc-b9e0-11b2b1d42485" />
 
  5. Network Utilization Monitor Started Successfully
-    <img width="776" height="183" alt="Screenshot 2026-04-20 at 12 18 19 AM" src="https://github.com/user-attachments/assets/b29b2215-2f73-4e64-b981-bd18d7266473" />
+   <img width="940" height="547" alt="Screenshot 2026-04-20 at 3 49 17 PM" src="https://github.com/user-attachments/assets/d5b31e9d-4f9c-4ef4-bba5-1a3b349c3391" />
