@@ -1,52 +1,82 @@
-# Network Utilization Monitor
+# File: ~/pox/pox/misc/monitor.py
 
-## Project Overview
-The Network Utilization Monitor is a Software Defined Networking (SDN) based project developed using **POX Controller** and **Mininet**. The main objective of this project is to monitor bandwidth utilization across the network by collecting byte counters from switches and displaying network usage periodically.
+from pox.core import core
+import pox.openflow.libopenflow_01 as of
+from pox.lib.recoco import Timer
+import time
 
-This project demonstrates how SDN controllers can be used for real-time traffic monitoring and network management.
+log = core.getLogger()
 
----
+# Store previous byte counts and timestamps
+previous_stats = {}
 
-## Objectives
-- Measure and display bandwidth utilization across the network.
-- Collect RX and TX byte counters from switch ports.
-- Estimate bandwidth usage.
-- Display utilization statistics.
-- Update network statistics periodically.
+class NetworkMonitor(object):
+    def __init__(self, connection):
+        self.connection = connection
+        self.connection.addListeners(self)
 
----
+        # Request stats every 2 seconds
+        Timer(2, self.request_stats, recurring=True)
 
-## Tools & Technologies Used
-- **Operating System:** Ubuntu Linux
-- **Programming Language:** Python
-- **SDN Controller:** POX
-- **Network Emulator:** Mininet
+    def request_stats(self):
+        self.connection.send(
+            of.ofp_stats_request(
+                body=of.ofp_flow_stats_request()
+            )
+        )
 
----
+    def _handle_FlowStatsReceived(self, event):
+        global previous_stats
 
-## Project Structure
+        current_time = time.time()
 
-```bash
-Network-Utilization-Monitor/
-│── pox/
-│── ext/
-│   └── monitor.py
-│── README.md
-```
+        for stat in event.stats:
+            try:
+                # Ignore empty flows
+                if stat.byte_count == 0:
+                    continue
 
- ## RESULTS /OUTPUT
+                src = stat.match.nw_src
+                dst = stat.match.nw_dst
 
- 1. POX Controller Start
-    <img width="1016" height="514" alt="Screenshot 2026-04-20 at 12 06 32 AM" src="https://github.com/user-attachments/assets/db7e4b5e-fc63-4893-8389-bf6ce7aadc2d" />
+                # Ignore flows without IP match
+                if src is None or dst is None:
+                    continue
 
- 2. Mininet Topology
-<img width="1168" height="287" alt="Screenshot 2026-04-20 at 12 08 05 AM" src="https://github.com/user-attachments/assets/ce652ed6-b079-44b0-baa5-5cbf426b6300" />
+                flow_key = str(src) + " -> " + str(dst)
 
- 3. pingall Connectivity Test
-<img width="570" height="115" alt="Screenshot 2026-04-20 at 12 08 41 AM" src="https://github.com/user-attachments/assets/940cfce9-a498-404d-83fd-49d2d17d9d66" />
+                if flow_key in previous_stats:
+                    old_bytes, old_time = previous_stats[flow_key]
 
- 4. Traffic Generation (h1 ping h2)
-<img width="1092" height="591" alt="Screenshot 2026-04-20 at 12 08 49 AM" src="https://github.com/user-attachments/assets/8204c071-ecf2-43fc-b9e0-11b2b1d42485" />
+                    byte_diff = stat.byte_count - old_bytes
+                    time_diff = current_time - old_time
 
- 5. Network Utilization Monitor Started Successfully
-   <img width="940" height="547" alt="Screenshot 2026-04-20 at 3 49 17 PM" src="https://github.com/user-attachments/assets/d5b31e9d-4f9c-4ef4-bba5-1a3b349c3391" />
+                    if time_diff > 0:
+                        bandwidth = byte_diff / time_diff
+
+                        log.info(
+                            "Flow %s | Bandwidth: %.2f Bytes/s",
+                            flow_key,
+                            bandwidth
+                        )
+
+                previous_stats[flow_key] = (
+                    stat.byte_count,
+                    current_time
+                )
+
+            except:
+                pass
+
+
+def launch():
+    def start_switch(event):
+        log.info("Monitoring Switch Connected")
+        NetworkMonitor(event.connection)
+
+    core.openflow.addListenerByName(
+        "ConnectionUp",
+        start_switch
+    )
+
+    log.info("Bandwidth Monitor Started")
