@@ -137,7 +137,8 @@ Flow 10.0.0.1 -> 10.0.0.2 | Bandwidth: 114.96 Bytes/s
 
 ### 5. Controller Code
 
-![Controller Code](screenshots/5_controller_code.png)
+<img width="1402" height="746" alt="Screenshot 2026-04-20 at 10 28 13 PM" src="https://github.com/user-attachments/assets/bf0c5801-999d-45a8-a9a7-550d522d92aa" />
+
 
 ### 6. Controller Running
 
