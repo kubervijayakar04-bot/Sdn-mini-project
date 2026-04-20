@@ -1,73 +1,53 @@
-# ~/pox/ext/monitor.py
-# Network Utilization Monitor for POX
-# Collect byte counters, estimate bandwidth, display utilization, update periodically
-
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
-from pox.lib.recoco import Timer
+from pox.lib.util import dpidToStr
 import time
 
 log = core.getLogger()
 
-# Store previous stats
-prev_stats = {}
+class NetworkMonitor(object):
+    def __init__(self, connection):
+        self.connection = connection
+        self.connection.addListeners(self)
+        self.last_stats = {}
+        self.last_time = time.time()
 
-# Assume link speed = 100 Mbps for utilization calculation
-LINK_SPEED = 100000000  # bits per second
+        # Request stats every 2 seconds
+        core.callDelayed(2, self._request_stats)
 
+    def _request_stats(self):
+        self.connection.send(of.ofp_stats_request(body=of.ofp_flow_stats_request()))
+        core.callDelayed(2, self._request_stats)
 
-def request_stats():
-    for connection in core.openflow.connections:
-        connection.send(of.ofp_port_stats_request())
-    log.info("Requested port statistics...")
+    def _handle_FlowStatsReceived(self, event):
+        current_time = time.time()
+        time_diff = current_time - self.last_time
 
+        for stat in event.stats:
+            if stat.byte_count == 0:
+                continue
 
-def handle_portstats(event):
-    global prev_stats
+            key = (stat.match.nw_src, stat.match.nw_dst)
 
-    dpid = event.connection.dpid
-    now = time.time()
+            if key in self.last_stats:
+                prev_bytes = self.last_stats[key]
+                byte_diff = stat.byte_count - prev_bytes
 
-    for stat in event.stats:
-        port_no = stat.port_no
+                bandwidth = byte_diff / time_diff  # Bytes per second
 
-        # Skip local port
-        if port_no > 65534:
-            continue
+                log.info("Flow %s -> %s | Bandwidth: %.2f Bytes/s",
+                         stat.match.nw_src,
+                         stat.match.nw_dst,
+                         bandwidth)
 
-        key = (dpid, port_no)
+            self.last_stats[key] = stat.byte_count
 
-        rx_bytes = stat.rx_bytes
-        tx_bytes = stat.tx_bytes
-        total_bytes = rx_bytes + tx_bytes
-
-        if key in prev_stats:
-            old_bytes, old_time = prev_stats[key]
-
-            delta_bytes = total_bytes - old_bytes
-            delta_time = now - old_time
-
-            if delta_time > 0:
-                bandwidth_bps = (delta_bytes * 8) / delta_time
-                utilization = (bandwidth_bps / LINK_SPEED) * 100
-
-                print("--------------------------------------------------")
-                print("Switch:", dpid, " Port:", port_no)
-                print("RX Bytes:", rx_bytes, " TX Bytes:", tx_bytes)
-                print("Bandwidth: %.2f Mbps" % (bandwidth_bps / 1000000))
-                print("Utilization: %.2f%%" % utilization)
-
-        prev_stats[key] = (total_bytes, now)
-
-
-def start_monitor():
-    Timer(5, request_stats, recurring=True)
-    log.info("Network Utilization Monitor Started (every 5 sec)")
+        self.last_time = current_time
 
 
 def launch():
-    core.openflow.addListenerByName("PortStatsReceived", handle_portstats)
-    core.openflow.addListenerByName("ConnectionUp",
-                                    lambda event: log.info("Switch Connected: %s",
-                                                           event.connection.dpid))
-    start_monitor()
+    def start_switch(event):
+        log.info("Monitoring switch %s", dpidToStr(event.dpid))
+        NetworkMonitor(event.connection)
+
+    core.openflow.addListenerByName("ConnectionUp", start_switch)
